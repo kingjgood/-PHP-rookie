@@ -1,0 +1,4 @@
+strtotime(date("Y-m-d 00:00:00",time())); //今日00:00:00点时间戳
+strtotime(date("Y-m-d 23:59:59",time()));   //今日23:59:59点时间戳
+strtotime(date("Y-m-d 00:00:00",time()-86400)); //昨日00:00:00点时间戳
+strtotime(date("Y-m-d 23:59:59",time()-86400));   //今日23:59:59点时间戳
