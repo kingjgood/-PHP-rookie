@@ -1,0 +1,207 @@
+【卡兹Gege公众平台】
+APPid：wxbebcfe6e01e1942f
+AppSecret：6990880ef79b08fd86f6b6308c0c2fdf
+
+
+【PHP】：
+1.$start_daytime=strtotime(date("Y-m-d 00:00:00",time())); //今日00:00:00点时间戳
+$end_daytime=strtotime(date("Y-m-d 23:59:59",time()));   //今日23:59:59点时间戳
+$start_yesterday=strtotime(date("Y-m-d 00:00:00",time()-86400)); //昨日00:00:00点时间戳
+$end_yesterday=strtotime(date("Y-m-d 23:59:59",time()-86400));   //今日23:59:59点时间戳
+
+2.二维数组逗号分割
+$memberid=$this->db->getlist("member","uid","cuid=$uid");
+$value=array();
+foreach($memberid as $it)
+{  
+$value[] =$it['uid'];
+}
+$because = implode(',', $value);
+
+
+
+
+【MYSQL】：
+
+去除重复保留最小id一条
+DELETE
+FROM
+    ws_skeyshop
+WHERE
+    goodsid IN (
+    SELECT goodsid FROM (
+        SELECT
+            goodsid
+        FROM
+            ws_skeyshop
+        GROUP BY
+            goodsid
+        HAVING
+            COUNT(id) > 1
+    ) AS tab1
+    )
+AND id NOT IN (
+    SELECT id FROM (
+        SELECT
+        MIN(id) AS id 
+        FROM
+        ws_skeyshop
+        GROUP BY
+        goodsid
+        HAVING
+        COUNT(id) > 1
+    ) AS tab2
+)
+
+mysql更新密码使用md5和sha1加密并且使用upper转换大写
+update ws_member set loginpass=upper(SHA1(md5('1234567'))) where uid=1106;
+
+
+【扩展添加】：
+
+redis扩展添加
+http://pecl.php.net/package/redis
+
+【微信公众平台jssdk】：
+一：绑定JS接口安全域名
+生产号绑定方法：登录微信公众平台进入“公众号设置”的“功能设置”里填写“JS接口安全域名”。
+测试号绑定方法：进入测试号管理页面，找到JS接口安全域名项绑定
+JS接口安全域名官方说法是：开发者可在该域名下调用微信开放的JS接口
+域名格式：如果你的项目域名是http://test.domain.com,那么JS接口安全域名为test.domain.com。切记！
+域名绑定失败或者域名不存在会报错误：invalid url domain
+
+二：引入微信js文件
+引入方法：在需要调用JS接口的页面引入JS文件，用script标签引入即可
+JS文件路径：http://res.wx.qq.com/open/js/jweixin-1.1.0.js（支持https）
+
+三：通过wx.config接口注入权限验证
+ 每个需要使用jssdk的页面都要使用config接口注入配置信息，wx.config调用方法如下：
+ wx.config({
+    debug: true, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
+    appId: '', // 必填，公众号的唯一标识
+    timestamp: , // 必填，生成签名的时间戳，精确到秒
+    nonceStr: '', // 必填，生成签名的随机串
+    signature: '',// 必填，签名
+    jsApiList: [] // 必填，需要使用的JS接口列表，例如：['chooseImage','previewImage','uploadImage']
+})
+其中appId,timestamp,nonceStr,signature必须从后台获取
+
+四：后台生成并返回前端所需参数
+1、jsapi_ticket
+
+jsapi_ticket是公众号用于调用js接口的临时票据。有效期7200秒，跟公众号普通access_token一样，必须全局缓存起来，因为这个ticket获取次数有限，超过次数将无法使用。建议设置缓存时间为7198秒，因为当请求微信端生成jsapi_ticket返回给后台保存这个动作需要时间，如果设置7200秒，实际上最后一两秒时，缓存里面还存在，但实际在微信那边已经过期了，再拿这个ticket会出错。生成jsapi_ticket如下：
+
+(1)获取普通access_token(GET请求): 
+
+https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET
+(2)用第一步获取的access_token使用GET请求获取jsapi_ticket
+
+https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token=ACCESS_TOKEN&type=jsapi
+正确获取信息如下：
+{
+"errcode":0,
+"errmsg":"ok",
+"ticket":"bxLdikRXVbTPdHSM05e5u5sUoXNKd8-41ZO3MhKoyN5OfkWITDGgnr2fwJ0m9E8NYzWKVZvdVtaUgWvsdshFKA",
+"expires_in":7200
+}
+2、生成签名（signature）
+签名规则：1、参与签名的字段包括noncestr（随机字符串）, 有效的jsapi_ticket, timestamp（时间戳）, url（当前网页的URL，不包含#及其后面部分）。2、对所有待签名参数按照字段名的ASCII 码从小到大排序（字典序，sort()即可）后，使用URL键值对的格式（即key1=value1&key2=value2…）拼接成字符串（string）。3、使用sha1加密拼接成的字符串string。注意：字段名和字段值都要使用原值，不要进行url转义
+
+参与的字段示例：
+
+noncestr=Wm3WZYTPz0wzccnW
+jsapi_ticket=sM4AOVdWfPE4DxkXGEs8VMCPGGVi4C3VM0P37wVUCFvkVAy_90u5h9nbSlYy3-Sl-HhTdfl2fzFy1AOcHKP7qg
+timestamp=1414587457
+url=http://mp.weixin.qq.com?params=value
+拼接完成的字符串：
+jsapi_ticket=sM4AOVdWfPE4DxkXGEs8VMCPGGVi4C3VM0P37wVUCFvkVAy_90u5h9nbSlYy3-Sl-HhTdfl2fzFy1AOcHKP7qg&noncestr=Wm3WZYTPz0wzccnW×tamp=1414587457&url=http://mp.weixin.qq.com?params=value
+使用sha1加密后的signature:
+0f9de62fce790f9a083d5c99e95740ceb90c27ed
+3、签名生成完后将appId、timestamp、nonceStr、signature一起返回到前端。格式示例：
+{
+    appId:appId,
+    timestamp:timestamp,
+    nonceStr: noncestr,
+    signature: signature
+}
+前端拿到值后，写入到wx.config中相应字段即可
+
+注意：
+
+1、前端wx.config配置中的nonceStr字段名称的's'是大写。但是后台生成签名的noncestr字段的‘s’是小写，千万要注意，博主在这里浪费了不少时间。囧囧
+
+2、时间戳(timestamp)值要记住精确到秒，不是毫秒。
+
+3、生成签名的url(使用jssdk的页面地址，这个页面地址可以在浏览器访问)，包含“？”号后面的所有参数，不包含“#”号后面的值。
+
+如果是静默授权或者授权页面同意授权后跳转到的页面，页面路径会添加两个参数：code和state。
+
+即授权后跳转页面为http://redirect.page.com，则完整路径为
+
+http://redirect.page.com?code=kdijafdhjaikeiu20kaiela&state=STATE。
+
+那么生成签名的url必须为授权后跳转页面的完整路径。前端获取这个路径：location.href.split('#')[0]
+
+五：调用接口
+wx.config配置完成后会执行wx.ready方法，所有接口必须要在config返回结果之后操作。config是一个客户端的异步操作，所以如果需要在页面加载时就调用相关接口，则须把相关接口放在ready函数中调用来确保正确执行。对于用户触发时才调用的接口，则可以直接调用，不需要放在ready函数中。当前页面要使用的接口，要写入到config配置中的jsApiList中
+    wx.ready(function () {
+           //分享给朋友    **vm.codeImgUrl 后台返回内容
+            wx.onMenuShareAppMessage({
+                      title: vm.codeImgUrl.title, //分享标题
+                      desc: vm.codeImgUrl.content,  //分享内容
+                      link: vm.codeImgUrl.url, //跳转地址
+                      imgUrl: vm.codeImgUrl.qrcode,//图片地址
+                      trigger: function (res) {
+                        // 不要尝试在trigger中使用ajax异步请求修改本次分享的内容，因为客户端分享操作是一个同步操作，这时候使用ajax的回包会还没有返回
+                        // alert('用户点击发送给朋友');
+                      },
+                      success: function (res) {
+                        alert('已分享');
+                      },
+                      cancel: function (res) {
+                        alert('已取消');
+                      },
+                      fail: function (res) {
+                        alert(JSON.stringify(res));
+                      }
+                    });
+                //分享到朋友圈
+                wx.onMenuShareTimeline({
+                      title: vm.codeImgUrl.title, //分享标题
+                      desc: vm.codeImgUrl.content,  //分享内容
+                      link: vm.codeImgUrl.url, //跳转地址
+                      imgUrl: vm.codeImgUrl.qrcode,//图片地址
+                  trigger: function (res) {
+                    // 不要尝试在trigger中使用ajax异步请求修改本次分享的内容，因为客户端分享操作是一个同步操作，这时候使用ajax的回包会还没有返回
+                    // alert('用户点击分享到朋友圈');
+                  },
+                  success: function (res) {
+                    // alert('已分享');
+                  },
+                  cancel: function (res) {
+                    // alert('已取消');
+                  },
+                  fail: function (res) {
+                    // alert(JSON.stringify(res));
+                  }
+                });
+               
+           });
+           //点击扫一扫 不需要放在ready里执行 增加外层点击事件
+            $("#scan").click(function(){
+               wx.scanQRCode({
+                desc: 'scanQRCode desc',
+                needResult: 0, // 默认为0，扫描结果由微信处理，1则直接返回扫描结果，
+                scanType: ["qrCode", "barCode"], // 可以指定扫二维码还是一维码，默认二者都有
+                success: function (res) {
+                    var url = res.resultStr;
+                    var tempArray = url.split(',');
+                    var tempNum = tempArray[1];//这个就是扫描后返回值扫描值
+                    alert("扫描成功::扫描码=" + tempNum);
+                }
+                });
+            });
+
+【在线生成QQ在线客服】
+1.http://shang.qq.com/v3/widget.html
+2.生成相应客服QQ号url
